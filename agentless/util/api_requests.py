@@ -4,7 +4,11 @@ from typing import Dict, Union
 import anthropic
 import openai
 import tiktoken
+from fireworks.client import Fireworks
+import os
 
+llama_api_key = os.environ.get('LLAMA_FIREWORK_API_KEY')
+llama_model = os.environ.get('LLAMA_MODEL_NAME')
 
 def num_tokens_from_messages(message, model="gpt-3.5-turbo-0301"):
     """Returns the number of tokens used by a list of messages."""
@@ -59,14 +63,17 @@ def request_chatgpt_engine(config, logger, base_url=None, max_retries=40, timeou
     ret = None
     retries = 0
 
-    client = openai.OpenAI(base_url=base_url)
+    # client = openai.OpenAI(base_url=base_url)
+    client = Fireworks(api_key=llama_api_key)
 
     while ret is None and retries < max_retries:
         try:
             # Attempt to get the completion
             logger.info("Creating API request")
-
-            ret = client.chat.completions.create(**config)
+            ret = client.chat.completions.create(model = llama_model,
+                                                 messages = config['messages'],
+                                                 temperature = config['temperature'])
+            # ret = client.chat.completions.create(**config)
 
         except openai.OpenAIError as e:
             if isinstance(e, openai.BadRequestError):
